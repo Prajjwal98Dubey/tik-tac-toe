@@ -1,7 +1,5 @@
-/// https://www.linkedin.com/in/prajjwal-dubey-8a1938182/
-
 import { useEffect, useRef, useState } from "react";
-
+import toast from "react-hot-toast";
 const Diagram = ({ player, gameId, symbol }) => {
   const [spaces, setSpaces] = useState(
     new Array(3).fill(new Array(3).fill(""))
@@ -14,7 +12,6 @@ const Diagram = ({ player, gameId, symbol }) => {
         `http://127.0.0.1:5000/check_status?gameId=${gameId}`
       );
       status = await status.json();
-      // console.log("HERE => ", status["game_status"]);
       if (status["game_status"]) {
         clearInterval(intervalRef.current);
         currGameRef.current = setInterval(async () => {
@@ -47,7 +44,10 @@ const Diagram = ({ player, gameId, symbol }) => {
           });
           if (res["game_over"]) {
             clearInterval(currGameRef.current);
-            alert(`Winner of the Game is ${res["game_winner"]}`);
+            toast.success(`Winner is ${res["game_winner"]}`, {
+              position: "top-center",
+              duration: 2500,
+            });
           }
         }, 800);
       }
@@ -81,7 +81,6 @@ const Diagram = ({ player, gameId, symbol }) => {
   };
   return (
     <>
-      {/* {console.log(spaces)} */}
       <div className="flex justify-center py-2">
         <p className="text-center font-bold text-green-400">{player}</p>
       </div>
@@ -94,7 +93,9 @@ const Diagram = ({ player, gameId, symbol }) => {
                   <div
                     onClick={() => handleCellClick(index, i)}
                     key={i + index}
-                    className="w-[70px] h-[70px] border border-black py-2 px-2 hover:bg-red-400 cursor-pointer"
+                    className={`w-[70px] h-[70px] border border-black py-2 px-2 hover:bg-red-400 cursor-pointer flex justify-center items-center font-bold  ${
+                      spaces[index][i] !== "" && "bg-red-600"
+                    } text-white`}
                   >
                     {spaces[index][i]}
                   </div>
