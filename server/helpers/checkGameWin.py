@@ -1,5 +1,3 @@
-
-
 def check_game_win(grid):
     ROWS = len(grid)
     COLS = len(grid[0])

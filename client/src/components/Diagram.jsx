@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
-const Diagram = ({ player, gameId, symbol }) => {
+const Diagram = ({ player, gameId, symbol, userId, chance, setChance }) => {
   const [spaces, setSpaces] = useState(
     new Array(3).fill(new Array(3).fill(""))
   );
+  const [opponent, setOpponent] = useState("");
+  const [opponentId, setOpponentId] = useState("");
+  // const [chance, setChance] = useState("");
   const intervalRef = useRef(null);
   const currGameRef = useRef(null);
   useEffect(() => {
@@ -13,10 +16,20 @@ const Diagram = ({ player, gameId, symbol }) => {
       );
       status = await status.json();
       if (status["game_status"]) {
+        setOpponent(
+          status["player_1"] !== player
+            ? status["player_1"]
+            : status["player_2"]
+        );
+        setOpponentId(
+          status["player_1"] !== player
+            ? status["player1_id"]
+            : status["player2_id"]
+        );
         clearInterval(intervalRef.current);
         currGameRef.current = setInterval(async () => {
           let res = await fetch(
-            `http://127.0.0.1:5000/game_status?gameId=${gameId}`,
+            `http://127.0.0.1:5000/game_status?gameId=${gameId}&playerName=${player}&userId=${userId}&chance=${chance}`,
             {
               method: "GET",
             }
@@ -44,15 +57,23 @@ const Diagram = ({ player, gameId, symbol }) => {
           });
           if (res["game_over"]) {
             clearInterval(currGameRef.current);
-            toast.success(`Winner is ${res["game_winner"]}`, {
-              position: "top-center",
-              duration: 2500,
-            });
+            // {
+            //   symbol === res["game_winner"]
+            //     ? toast.success("You won the Game 😁😁😁", {
+            //         position: "top-center",
+            //         duration: 2500,
+            //       })
+            //     : toast.error("You lost the Game 😭😭😭", {
+            //         position: "top-center",
+            //         duration: 2500,
+            //       });
+            // }
           }
         }, 800);
       }
-    }, 3500);
-  }, [gameId, symbol]);
+    }, 2000);
+  }, [chance, gameId, player, symbol, userId]);
+
   const handleCellClick = async (r, c) => {
     let updatedSpaces = [];
     for (let i = 0; i < spaces.length; i++) {
@@ -65,8 +86,7 @@ const Diagram = ({ player, gameId, symbol }) => {
       updatedSpaces.push(tmp);
     }
     setSpaces(updatedSpaces);
-
-    await fetch("http://127.0.0.1:5000/update_game", {
+    let updatedStatus = await fetch("http://127.0.0.1:5000/update_game", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -76,13 +96,48 @@ const Diagram = ({ player, gameId, symbol }) => {
         row: r,
         col: c,
         symbol,
+        playerName: player,
+        userId: userId,
+        chance,
       }),
     });
+    updatedStatus = await updatedStatus.json();
+    if(updatedStatus["game_over"])
+    {
+      symbol === updatedStatus["game_winner"]
+        ? toast.success("You won the Game 😁😁😁", {
+            position: "top-center",
+            duration: 2500,
+          })
+        : toast.error("You lost the Game 😭😭😭", {
+            position: "top-center",
+            duration: 2500,
+          });
+    }
+    let nextChanceRes = await fetch(
+      `http://127.0.0.1:5000/next?currChance=${chance}&gameId=${gameId}`
+    );
+    nextChanceRes = await nextChanceRes.json();
+    setChance(nextChanceRes["next_chance"]);
   };
   return (
     <>
       <div className="flex justify-center py-2">
-        <p className="text-center font-bold text-green-400">{player}</p>
+        <p
+          className={`text-center font-bold text-green-400 px-2 py-2 ${
+            [player, userId].join("-") == chance && "border border-green-500"
+          }`}
+        >
+          {player}
+        </p>
+        <p
+          className={`text-center font-bold text-red-400 px-2 py-2  ${
+            [opponent, opponentId].join("-") == chance &&
+            "border border-green-500"
+          }`}
+        >
+          {opponent}
+        </p>
       </div>
       <div className="flex justify-center py-4">
         <div className="w-fit">

@@ -7,27 +7,41 @@ const Home = () => {
   const [gameId, setGameId] = useState("");
   const [isJoin, setIsJoin] = useState(false);
   const [symbol, setSymbol] = useState("");
+  const [userId, setUserId] = useState("");
+  const [chance, setChance] = useState("");
 
   const handleJoinGame = async () => {
     setIsJoin(true);
     setSymbol("0");
-    await fetch("http://127.0.0.1:5000/add_user", {
+    let user_id = nanoid();
+    setUserId(user_id);
+    let res = await fetch("http://127.0.0.1:5000/add_user", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         user,
-        userId: nanoid(),
+        userId: user_id,
         gameId: gameId,
       }),
     });
+    res = await res.json();
+    if (res["game_status"]) {
+      let nextChanceRes = await fetch(
+        `http://127.0.0.1:5000/next?currChance=${chance}&gameId=${gameId}`
+      );
+      nextChanceRes = await nextChanceRes.json();
+      setChance(nextChanceRes["next_chance"]);
+    }
   };
 
   const handleCreateGame = async () => {
     setSymbol("X");
     setGameId(gameId != "" ? gameId : nanoid());
     setIsJoin(true);
+    let user_id = nanoid();
+    setUserId(user_id);
     await fetch("http://127.0.0.1:5000/add_user", {
       method: "POST",
       headers: {
@@ -35,10 +49,11 @@ const Home = () => {
       },
       body: JSON.stringify({
         user,
-        userId: nanoid(),
+        userId: user_id,
         gameId: gameId != "" ? gameId : nanoid(),
       }),
     });
+    setChance([user, user_id].join("-"));
   };
 
   return (
@@ -86,7 +101,16 @@ const Home = () => {
           </div>
         </>
       )}
-      {isJoin && <Diagram player={user} gameId={gameId} symbol={symbol} />}
+      {isJoin && (
+        <Diagram
+          player={user}
+          gameId={gameId}
+          symbol={symbol}
+          userId={userId}
+          chance={chance}
+          setChance={setChance}
+        />
+      )}
     </div>
   );
 };
